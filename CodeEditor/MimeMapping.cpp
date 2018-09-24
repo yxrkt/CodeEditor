@@ -5,7 +5,7 @@
 #include <string>
 #include <unordered_map>
 
-static const std::unordered_map<const char*, const char*> mimeMappings =
+static const std::unordered_map<std::string, const char*> mimeMappings =
 {
     { ".323", "text/h323" },
     { ".aaf", "application/octet-stream" },
@@ -358,9 +358,9 @@ const char* MimeMapping::GetMimeMapping(const char* fileName)
     {
         std::string str(extension);
         std::transform(std::begin(str), std::end(str), std::begin(str), tolower);
-        if (auto mimeType = mimeMappings.at(str.c_str()))
+        if (auto mimeType = mimeMappings.find(str); mimeType != mimeMappings.end())
         {
-            return mimeType;
+            return mimeType->second;
         }
     }
 

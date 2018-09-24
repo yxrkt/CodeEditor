@@ -1,16 +1,11 @@
 #include "CodeEditorImpl.h"
 
-#include "include\wrapper\cef_zip_archive.h"
-#include "include\wrapper\cef_stream_resource_handler.h"
-
+#include "CodeEditorApp.h"
 #include "ICodeEditorRenderer.h"
-#include "MimeMapping.h"
-#include "resource.h"
 
-#include <algorithm>
 #include <string>
 
-static const char* schemeName = "app";
+static CefRefPtr<CodeEditorApp> s_app;
 
 template <typename T, size_t N>
 constexpr size_t count_of(T (&)[N])
@@ -18,45 +13,91 @@ constexpr size_t count_of(T (&)[N])
     return N;
 }
 
+static void InitializeCef()
+{
+    static bool s_initialized = false;
+    if (!s_initialized)
+    {
+        CefEnableHighDPISupport();
+
+        CefSettings settings;
+
+        static const wchar_t browserSubprocessPath[] = L"CodeEditor.BrowserSubprocess.exe";
+        cef_string_set(
+            browserSubprocessPath,
+            count_of(browserSubprocessPath),
+            &settings.browser_subprocess_path,
+            false);
+
+        settings.multi_threaded_message_loop = true;
+        settings.windowless_rendering_enabled = true;
+        settings.no_sandbox = true;
+
+        s_app = new CodeEditorApp;
+        CefInitialize({}, settings, s_app, nullptr);
+
+        atexit([]()
+        {
+            s_app = nullptr;
+            CefShutdown();
+        });
+
+        s_initialized = true;
+    }
+}
+
 CodeEditorImpl::CodeEditorImpl(ICodeEditorRenderer* renderer)
     : m_renderer(renderer)
 {
-    CefSettings settings;
+    InitializeCef();
 
-    static const wchar_t browserSubprocessPath[] = L"CodeEditor.BrowserSubprocess.exe";
-    cef_string_set(
-        browserSubprocessPath,
-        count_of(browserSubprocessPath),
-        &settings.browser_subprocess_path,
-        false);
+    CefWindowInfo windowInfo;
+    windowInfo.SetAsWindowless(NULL);
 
-    settings.windowless_rendering_enabled = true;
-    settings.no_sandbox = true;
-
-    CefInitialize({}, settings, this, nullptr);
-
-    LoadResourcesArchive();
+    //CefBrowserHost::CreateBrowser(windowInfo, this, "http://www.google.com", {}, nullptr);
+    CefBrowserHost::CreateBrowser(windowInfo, this, "app://web/index.html", {}, nullptr);
 }
 
-void CodeEditorImpl::OnContextInitialized()
+CefRefPtr<CefRenderHandler> CodeEditorImpl::GetRenderHandler()
 {
-    CefRegisterSchemeHandlerFactory(schemeName, {}, this);
+    return this;
 }
 
-void CodeEditorImpl::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
+CefRefPtr<CefKeyboardHandler> CodeEditorImpl::GetKeyboardHandler()
 {
-    registrar->AddCustomScheme(
-        schemeName,
-        false /*is_standard*/,
-        true /*is_local*/,
-        false /*id_diplay_isolated*/,
-        false /*is_secure*/,
-        false /*is_cors_enabled*/,
-        true /*is_csp_bypassing*/);
+    return this;
+}
+
+void CodeEditorImpl::OnAfterCreated(CefRefPtr<CefBrowser> browser)
+{
+    if (!m_browser)
+    {
+        m_browser = browser;
+    }
+}
+
+bool CodeEditorImpl::DoClose(CefRefPtr<CefBrowser> /*browser*/)
+{
+    return false;
+}
+
+void CodeEditorImpl::OnBeforeClose(CefRefPtr<CefBrowser> browser)
+{
+    if (m_browser == browser)
+    {
+        m_browser = nullptr;
+    }
 }
 
 bool CodeEditorImpl::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 {
+    Rect viewRect;
+    if (m_renderer->GetViewRect(viewRect))
+    {
+        rect = { viewRect.x, viewRect.y, viewRect.width, viewRect.height };
+        return true;
+    }
+
     return false;
 }
 
@@ -68,47 +109,5 @@ void CodeEditorImpl::OnPaint(
     int width,
     int height)
 {
-}
-
-CefRefPtr<CefResourceHandler> CodeEditorImpl::Create(
-    CefRefPtr<CefBrowser> browser,
-    CefRefPtr<CefFrame> frame,
-    const CefString& scheme_name,
-    CefRefPtr<CefRequest> request)
-{
-    if (scheme_name == schemeName)
-    {
-        auto url = request->GetURL().ToString().substr(6);
-        auto fragmentIndex = url.find_last_of('#');
-        if (fragmentIndex != std::string::npos)
-        {
-            url = url.substr(0, fragmentIndex);
-        }
-
-        std::transform(url.begin(), url.end(), url.begin(), tolower);
-        new CefStreamResourceHandler(
-            MimeMapping::GetMimeMapping(url.c_str()),
-            GetResource(url.c_str()));
-    }
-
-    return nullptr;
-}
-
-void CodeEditorImpl::LoadResourcesArchive()
-{
-    HMODULE module = GetModuleHandle(NULL);
-    HRSRC resourceInfo = FindResource(module, MAKEINTRESOURCE(IDR_WEBZIP), MAKEINTRESOURCE(0));
-    HGLOBAL resourceData = LoadResource(module, resourceInfo);
-    auto size = SizeofResource(module, resourceInfo);
-    void* data = LockResource(resourceData);
-
-    m_resourcesArchive = new CefZipArchive();
-
-    auto resourcesArchiveStream = CefStreamReader::CreateForData(data, size);
-    m_resourcesArchive->Load(resourcesArchiveStream, {}, true);
-}
-
-CefRefPtr<CefStreamReader> CodeEditorImpl::GetResource(const char* url)
-{
-    return m_resourcesArchive->GetFile(url)->GetStreamReader();
+    m_renderer->Render(buffer, width, height);
 }

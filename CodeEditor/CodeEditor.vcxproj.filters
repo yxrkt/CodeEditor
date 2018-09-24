@@ -4,18 +4,20 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="resource.h" />
     <ClInclude Include="MimeMapping.h" />
     <ClInclude Include="CodeEditorImpl.h" />
     <ClInclude Include="CodeEditor.h" />
     <ClInclude Include="ICodeEditorRenderer.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="CodeEditor.rc" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="CodeEditorApp.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MimeMapping.cpp" />
     <ClCompile Include="CodeEditorImpl.cpp" />
     <ClCompile Include="CodeEditor.cpp" />
+    <ClCompile Include="CodeEditorApp.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="CodeEditor.rc" />
   </ItemGroup>
 </Project>

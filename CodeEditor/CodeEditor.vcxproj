@@ -50,6 +50,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)packages\$(CefSdkVer)\CEF;$(IncludePath)</IncludePath>
   </PropertyGroup>
+  <PropertyGroup>
+    <WebZipFileName>$(IntDir)web.zip</WebZipFileName>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -58,6 +61,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)packages\$(CefSdkVer)\CEF;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Lib>
       <AdditionalDependencies>libcef.lib;libcef_dll_wrapper.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -73,6 +77,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)packages\$(CefSdkVer)\CEF;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -86,10 +91,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <!--<None Include="zipfile1.bin" />-->
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CodeEditor.cpp" />
+    <ClCompile Include="CodeEditorApp.cpp" />
     <ClCompile Include="CodeEditorImpl.cpp" />
     <ClCompile Include="MimeMapping.cpp" />
   </ItemGroup>
@@ -98,13 +103,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CodeEditor.h" />
+    <ClInclude Include="CodeEditorApp.h" />
     <ClInclude Include="ICodeEditorRenderer.h" />
     <ClInclude Include="MimeMapping.h" />
-    <ClInclude Include="resource.h" />
     <ClInclude Include="CodeEditorImpl.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="CodeEditor.rc" />
+    <ResourceCompile Include="CodeEditor.rc">
+      <PreprocessorDefinitions>WEB_ZIP_FILE=$(WebZipFileName)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
@@ -118,7 +126,10 @@
     <Error Condition="!Exists('..\packages\MSBuildTasks.1.5.0.235\build\MSBuildTasks.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\MSBuildTasks.1.5.0.235\build\MSBuildTasks.targets'))" />
     <Error Condition="!Exists('..\packages\cef.redist.x64.3.3396.1786\build\cef.redist.x64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\cef.redist.x64.3.3396.1786\build\cef.redist.x64.props'))" />
   </Target>
-  <Target Name="Zip" BeforeTargets="PrepareForBuild">
-    <Zip Files="@(ZipFile-&gt;ToLower())" WorkingDirectory="$(MSBuildProjectDirectory)" ZipFileName="web.zip" />
+  <Target Name="BeforeResourceCompile">
+    <Zip Files="@(ZipFile-&gt;ToLower())" WorkingDirectory="$(MSBuildProjectDirectory)" ZipFileName="$(WebZipFileName)" />
+  </Target>
+  <Target Name="AfterResourceCompile">
+    <Copy SourceFiles="$(ProjectDir)$(IntDir)$(ProjectName).res" DestinationFolder="$(OutDir)" />
   </Target>
 </Project>

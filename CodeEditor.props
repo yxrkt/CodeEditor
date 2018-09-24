@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Target Name="AfterBuild">
+        <ItemGroup>
+            <SubProcessFiles Include="$(SolutionDir)\CodeEditor.BrowserSubprocess\bin\$(Platform)\$(Configuration)\CodeEditor.BrowserSubprocess.*" />
+        </ItemGroup>
+        <Copy SourceFiles="@(SubProcessFiles)" DestinationFolder="$(TargetDir)" />
+    </Target>
+  
+  <Target Name="CopyCefRedist" BeforeTargets="AfterBuild">
+    <Message Importance="high" Text="Copying cef.redist files" />
+    <Message Importance="high" Text="test $(SolutionDir) test" />
+    <Copy SourceFiles="@(CefRedist64)" DestinationFiles="@(CefRedist64->'$(TargetDir)\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>  
+</Project>
