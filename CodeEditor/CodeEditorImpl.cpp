@@ -3,6 +3,7 @@
 #include "CodeEditorApp.h"
 #include "ICodeEditorRenderer.h"
 
+#include <iostream>
 #include <string>
 
 static CefRefPtr<CodeEditorApp> s_app;
@@ -54,8 +55,13 @@ CodeEditorImpl::CodeEditorImpl(ICodeEditorRenderer* renderer)
     CefWindowInfo windowInfo;
     windowInfo.SetAsWindowless(NULL);
 
-    //CefBrowserHost::CreateBrowser(windowInfo, this, "http://www.google.com", {}, nullptr);
-    CefBrowserHost::CreateBrowser(windowInfo, this, "app://web/index.html", {}, nullptr);
+    //CefBrowserHost::CreateBrowser(windowInfo, this, "app://web/index.html", {}, nullptr);
+    CefBrowserHost::CreateBrowser(windowInfo, this, "http://www.google.com", {}, nullptr);
+}
+
+CefRefPtr<CefBrowser> CodeEditorImpl::GetBrowser() const
+{
+    return m_browser;
 }
 
 CefRefPtr<CefRenderHandler> CodeEditorImpl::GetRenderHandler()
@@ -66,6 +72,39 @@ CefRefPtr<CefRenderHandler> CodeEditorImpl::GetRenderHandler()
 CefRefPtr<CefKeyboardHandler> CodeEditorImpl::GetKeyboardHandler()
 {
     return this;
+}
+
+CefRefPtr<CefLifeSpanHandler> CodeEditorImpl::GetLifeSpanHandler()
+{
+    return this;
+}
+
+bool CodeEditorImpl::OnProcessMessageReceived(
+    CefRefPtr<CefBrowser> browser,
+    CefProcessId source_process,
+    CefRefPtr<CefProcessMessage> message)
+{
+    auto args = message->GetArgumentList();
+    std::cout << "from render process: " << args->GetString(0).ToString() << std::endl;
+
+    return false;
+}
+
+bool CodeEditorImpl::OnPreKeyEvent(
+    CefRefPtr<CefBrowser> browser,
+    const CefKeyEvent& event,
+    CefEventHandle os_event,
+    bool* is_keyboard_shortcut)
+{
+    return false;
+}
+
+bool CodeEditorImpl::OnKeyEvent(
+    CefRefPtr<CefBrowser> browser,
+    const CefKeyEvent& event,
+    CefEventHandle os_event)
+{
+    return false;
 }
 
 void CodeEditorImpl::OnAfterCreated(CefRefPtr<CefBrowser> browser)

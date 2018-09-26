@@ -15,6 +15,8 @@ public:
 
     // CefRenderProcessHandler
     virtual void OnWebKitInitialized() override;
+    virtual void OnBrowserCreated(CefRefPtr<CefBrowser> browser) override;
+    virtual void OnBrowserDestroyed(CefRefPtr<CefBrowser> browser) override;
 
     // CefV8Handler
     virtual bool Execute(
@@ -23,4 +25,7 @@ public:
         const CefV8ValueList& arguments,
         CefRefPtr<CefV8Value>& retval,
         CefString& exception) override;
+
+private:
+    CefRefPtr<CefBrowser> m_browser;
 };

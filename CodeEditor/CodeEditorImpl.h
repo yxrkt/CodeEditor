@@ -2,6 +2,7 @@
 
 #include "include\cef_client.h"
 #include "include\cef_render_handler.h"
+//#include "include\cef_mouse"
 
 class CefZipArchive;
 class CefStreamReader;
@@ -11,6 +12,7 @@ class CodeEditorImpl
     : public CefClient
     , public CefKeyboardHandler
     , public CefLifeSpanHandler
+    //, public CefMou
     , public CefRenderHandler
 {
     IMPLEMENT_REFCOUNTING(CodeEditorImpl);
@@ -18,11 +20,27 @@ class CodeEditorImpl
 public:
     CodeEditorImpl(ICodeEditorRenderer* renderer);
 
+    CefRefPtr<CefBrowser> GetBrowser() const;
+
     // CefClient
     virtual CefRefPtr<CefRenderHandler> GetRenderHandler() override;
     virtual CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override;
+    virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override;
+    virtual bool OnProcessMessageReceived(
+        CefRefPtr<CefBrowser> browser,
+        CefProcessId source_process,
+        CefRefPtr<CefProcessMessage> message) override;
 
     // CefKeyboardHandler
+    virtual bool OnPreKeyEvent(
+        CefRefPtr<CefBrowser> browser,
+        const CefKeyEvent& event,
+        CefEventHandle os_event,
+        bool* is_keyboard_shortcut) override;
+    virtual bool OnKeyEvent(
+        CefRefPtr<CefBrowser> browser,
+        const CefKeyEvent& event,
+        CefEventHandle os_event) override;
 
     // CefLifeSpanHandler
     virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) override;

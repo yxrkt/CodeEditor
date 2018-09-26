@@ -17,6 +17,7 @@
     <ProjectGuid>{0829F20A-0E2D-4934-9A58-8EF59F2E32C4}</ProjectGuid>
     <RootNamespace>CodeEditor</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -104,6 +105,7 @@
   <ItemGroup>
     <ClInclude Include="CodeEditor.h" />
     <ClInclude Include="CodeEditorApp.h" />
+    <ClInclude Include="EnumHelper.h" />
     <ClInclude Include="ICodeEditorRenderer.h" />
     <ClInclude Include="MimeMapping.h" />
     <ClInclude Include="CodeEditorImpl.h" />

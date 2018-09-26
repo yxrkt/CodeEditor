@@ -1,15 +1,74 @@
-<!DOCTYPE html>
-<html>
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 
 <head>
-    <meta charset="UTF-8">
-    <title>title</title>
+    <title>Editor Test</title>
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        #container {
+            height: 100%;
+            width: 100%;
+        }
+
+        .lineDeltaDecoration {
+            background: lightblue;
+            width: 5px !important;
+            margin-left: 2px;
+        }
+    </style>
+    <script src="./node_modules/monaco-editor/min/vs/loader.js"></script>
+    <script>
+        var editor;
+
+        (async () => {
+            require.config({ paths: { 'vs': './node_modules/monaco-editor/min/vs' } });
+
+            require(['vs/editor/editor.main'], function () {
+                monaco.editor.setTheme('vs-dark');
+                editor = monaco.editor.create(
+                    document.getElementById('container'), {
+                        value: '// save the world here',
+                        language: 'fsharp'
+                    });
+                editor.focus();
+
+                // editor.model.onDidChangeContent(function (e) {
+                //     var decorations = [];
+                //     for (var i in e.changes) {
+                //         decorations.push({
+                //             range: e.changes[i].range,
+                //             options: {
+                //                 isWholeLine: true,
+                //                 linesDecorationsClassName: 'lineDeltaDecoration'
+                //             }
+                //         });
+                //     }
+
+                //     editor.deltaDecorations([], decorations);
+                // });
+            });
+        })();
+
+        var onKeyDown = function (e) {
+            if (e.ctrlKey && e.key == 's') {
+                return false;
+            }
+
+            return true;
+        }
+    </script>
 </head>
 
-<body style="background:cornflowerblue">
-    <script>
-        console.log("hello world");
-    </script>
+<body
+      onresize="editor.layout()"
+      onkeydown="return onKeyDown(event)">
+    <div id="container"></div>
 </body>
 
 </html>
