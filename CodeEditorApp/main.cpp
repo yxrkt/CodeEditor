@@ -147,6 +147,12 @@ LRESULT CALLBACK MessageCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM 
         case WM_MBUTTONDBLCLK:
             editor->OnMouseClick(x, y, MouseButton::Middle, true, 2);
             return 0;
+        case WM_MOUSEHWHEEL:
+            editor->OnMouseWheel(x, y, GET_WHEEL_DELTA_WPARAM(wParam), 0);
+            return 0;
+        case WM_MOUSEWHEEL:
+            editor->OnMouseWheel(x, y, 0, GET_WHEEL_DELTA_WPARAM(wParam));
+            return 0;
         }
 
         return DefWindowProc(hwnd, message, wParam, lParam);
@@ -155,28 +161,8 @@ LRESULT CALLBACK MessageCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM 
     if (editor != nullptr &&
         message >= WM_KEYFIRST && message <= WM_KEYLAST)
     {
-        bool ctrl = GetKeyState(VK_LCONTROL) || GetKeyState(VK_RCONTROL);
-        bool alt = GetKeyState(VK_LMENU) || GetKeyState(VK_RMENU);
-        bool shift = GetKeyState(VK_LSHIFT) || GetKeyState(VK_RSHIFT);
-        auto modifiers = (Modifiers)(
-            (int)(ctrl ? Modifiers::Ctrl : Modifiers::None) |
-            (int)(alt ? Modifiers::Alt : Modifiers::None) |
-            (int)(shift ? Modifiers::Shift : Modifiers::None));
-
-        switch (message)
-        {
-        case WM_KEYDOWN:
-            editor->OnKey(KeyEventType::Down, (Modifiers)modifiers, (int)wParam, 0);
-            return 0;
-        case WM_CHAR:
-            editor->OnKey(KeyEventType::Character, (Modifiers)modifiers, (int)wParam, (char)wParam);
-            return 0;
-        case WM_KEYUP:
-            editor->OnKey(KeyEventType::Up, (Modifiers)modifiers, (int)wParam, 0);
-            return 0;
-        }
-
-        return DefWindowProc(hwnd, message, wParam, lParam);
+        editor->OnKey(message, (int)wParam, (int)lParam);
+        return 0;
     }
 
     switch (message)
@@ -227,6 +213,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     window_class.hInstance = hInstance;
     window_class.hCursor = LoadCursor(NULL, IDC_ARROW);
     window_class.lpszClassName = "CodeEditorSampleWindow";
+    window_class.style = CS_DBLCLKS;
 
     if (!RegisterClass(&window_class)) { return (int)GetLastError(); }
 

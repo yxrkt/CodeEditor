@@ -37,12 +37,6 @@ static void InitializeCef()
         s_app = new CodeEditorApp;
         CefInitialize({}, settings, s_app, nullptr);
 
-        atexit([]()
-        {
-            s_app = nullptr;
-            CefShutdown();
-        });
-
         s_initialized = true;
     }
 }
@@ -55,8 +49,7 @@ CodeEditorImpl::CodeEditorImpl(ICodeEditorRenderer* renderer)
     CefWindowInfo windowInfo;
     windowInfo.SetAsWindowless(NULL);
 
-    //CefBrowserHost::CreateBrowser(windowInfo, this, "app://web/index.html", {}, nullptr);
-    CefBrowserHost::CreateBrowser(windowInfo, this, "http://www.google.com", {}, nullptr);
+    CefBrowserHost::CreateBrowser(windowInfo, this, "app://web/index.html", {}, nullptr);
 }
 
 CefRefPtr<CefBrowser> CodeEditorImpl::GetBrowser() const

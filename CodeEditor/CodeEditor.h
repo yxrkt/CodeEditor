@@ -35,7 +35,7 @@ public:
     void OnMouseClick(int x, int y, MouseButton button, bool down, int clickCount);
     void OnMouseWheel(int x, int y, int deltaX, int deltaY);
 
-    void OnKey(KeyEventType type, Modifiers modifiers, int keyCode, char character);
+    void OnKey(int message, int wParam, int lParam);
 
 private:
     class CodeEditorImpl* m_impl;

@@ -38,20 +38,20 @@
                     });
                 editor.focus();
 
-                // editor.model.onDidChangeContent(function (e) {
-                //     var decorations = [];
-                //     for (var i in e.changes) {
-                //         decorations.push({
-                //             range: e.changes[i].range,
-                //             options: {
-                //                 isWholeLine: true,
-                //                 linesDecorationsClassName: 'lineDeltaDecoration'
-                //             }
-                //         });
-                //     }
+                editor.model.onDidChangeContent(function (e) {
+                    var decorations = [];
+                    for (var i in e.changes) {
+                        decorations.push({
+                            range: e.changes[i].range,
+                            options: {
+                                isWholeLine: true,
+                                linesDecorationsClassName: 'lineDeltaDecoration'
+                            }
+                        });
+                    }
 
-                //     editor.deltaDecorations([], decorations);
-                // });
+                    editor.deltaDecorations([], decorations);
+                });
             });
         })();
 

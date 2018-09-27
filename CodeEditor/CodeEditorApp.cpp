@@ -20,10 +20,10 @@ void CodeEditorApp::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> regist
 {
     registrar->AddCustomScheme(
         schemeName,
-        false /*is_standard*/,
-        true /*is_local*/,
-        false /*id_diplay_isolated*/,
-        false /*is_secure*/,
+        true /*is_standard*/,
+        false /*is_local*/,
+        false /*is_diplay_isolated*/,
+        true /*is_secure*/,
         true /*is_cors_enabled*/,
         false /*is_csp_bypassing*/);
 }

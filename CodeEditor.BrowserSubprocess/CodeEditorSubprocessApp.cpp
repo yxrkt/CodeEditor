@@ -7,21 +7,21 @@ CefRefPtr<CefRenderProcessHandler> CodeEditorSubprocessApp::GetRenderProcessHand
 
 void CodeEditorSubprocessApp::OnWebKitInitialized()
 {
-    std::string appCode =
-        "var app;"
-        "if (!app) {"
-        "    app = {};"
-        "    app.message = 'i am extension. i am consciousness.'"
-        "}"
-        ""
-        "(function () {"
-        "    app.doSomething = function() {"
-        "        native function doSomething();"
-        "        doSomething();"
-        "    }"
-        "})();";
+    //std::string appCode =
+    //    "var app;"
+    //    "if (!app) {"
+    //    "    app = {};"
+    //    "    app.message = 'i am extension. i am consciousness.'"
+    //    "}"
+    //    ""
+    //    "(function () {"
+    //    "    app.doSomething = function() {"
+    //    "        native function doSomething();"
+    //    "        doSomething();"
+    //    "    }"
+    //    "})();";
 
-    CefRegisterExtension("v8/app", appCode, this);
+    //CefRegisterExtension("v8/app", appCode, this);
 }
 
 void CodeEditorSubprocessApp::OnBrowserCreated(CefRefPtr<CefBrowser> browser)
