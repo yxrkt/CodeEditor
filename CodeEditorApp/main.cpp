@@ -1,4 +1,5 @@
 #include "..\CodeEditor\CodeEditor.h"
+#include "..\CodeEditor\ICodeEditorEventHandler.h"
 #include "..\CodeEditor\ICodeEditorRenderer.h"
 
 #include <Windows.h>
@@ -97,17 +98,78 @@ private:
     int m_bufferHeight;
 };
 
-struct CodeEditorAndRenderer
+class CodeEditorEventHandler : public ICodeEditorEventHandler
+{
+public:
+    virtual void OnMouseCursorChanged(MouseCursorType cursorType) override
+    {
+        auto cursor = [=]()
+        {
+            switch (cursorType)
+            {
+            case MouseCursorType::Pointer: return IDC_ARROW;
+            case MouseCursorType::Cross: return IDC_CROSS;
+            case MouseCursorType::Hand: return IDC_HAND;
+            case MouseCursorType::IBeam: return IDC_IBEAM;
+            case MouseCursorType::Wait: return IDC_WAIT;
+            case MouseCursorType::Help: return IDC_HELP;
+            case MouseCursorType::ResizeEast: return IDC_SIZEWE;
+            case MouseCursorType::ResizeNorth: return IDC_SIZENS;
+            case MouseCursorType::ResizeNorthEast: return IDC_SIZENESW;
+            case MouseCursorType::ResizeNorthWest: return IDC_SIZENWSE;
+            case MouseCursorType::ResizeSouth: return IDC_SIZENS;
+            case MouseCursorType::ResizeSouthEast: return IDC_SIZENWSE;
+            case MouseCursorType::ResizeSouthWest: return IDC_SIZENESW;
+            case MouseCursorType::ResizeWest: return IDC_SIZEWE;
+            case MouseCursorType::ResizeNorthSouth: return IDC_SIZENS;
+            case MouseCursorType::ResizeEastWest: return IDC_SIZEWE;
+            case MouseCursorType::ResizeNorthEastSouthWest: return IDC_SIZENESW;
+            case MouseCursorType::ResizeNorthWestSouthEast: return IDC_SIZENWSE;
+            case MouseCursorType::ResizeColumn: return IDC_SIZEWE;
+            case MouseCursorType::ResizeRow: return IDC_SIZENS;
+            case MouseCursorType::Move: return IDC_SIZEALL;
+            case MouseCursorType::VerticalText: return IDC_IBEAM;
+            case MouseCursorType::Progress: return IDC_WAIT;
+            case MouseCursorType::NoDrop: return IDC_NO;
+            case MouseCursorType::Copy: return IDC_ARROW;
+            case MouseCursorType::NotAllowed: return IDC_NO;
+            case MouseCursorType::Grab: return IDC_HAND;
+            case MouseCursorType::Grabbing: return IDC_HAND;
+            default:
+                return IDC_ARROW;
+            }
+        }();
+
+        m_cursor = LoadCursor(NULL, cursor);
+    }
+
+    HCURSOR GetCursor() const
+    {
+        return m_cursor;
+    }
+
+    virtual void OnSaved(const char* text) override
+    {
+        OutputDebugString(text);
+    }
+
+private:
+    HCURSOR m_cursor;
+};
+
+struct CodeEditorInfo
 {
     CodeEditor* m_codeEditor;
     CodeEditorRenderer* m_renderer;
+    CodeEditorEventHandler* m_eventHandler;
 };
 
 LRESULT CALLBACK MessageCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    auto editorAndRenderer = (CodeEditorAndRenderer*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-    auto editor = editorAndRenderer != nullptr ? editorAndRenderer->m_codeEditor : nullptr;
-    auto renderer = editorAndRenderer != nullptr ? editorAndRenderer->m_renderer : nullptr;
+    auto editorInfo = (CodeEditorInfo*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+    auto editor = editorInfo != nullptr ? editorInfo->m_codeEditor : nullptr;
+    auto renderer = editorInfo != nullptr ? editorInfo->m_renderer : nullptr;
+    auto eventHandler = editorInfo != nullptr ? editorInfo->m_eventHandler : nullptr;
 
     if (editor != nullptr &&
         message >= WM_MOUSEFIRST && message <= WM_MOUSELAST)
@@ -119,6 +181,9 @@ LRESULT CALLBACK MessageCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM 
         {
         case WM_MOUSEMOVE:
             editor->OnMouseMove(x, y, false);
+            return 0;
+        case WM_MOUSELEAVE:
+            editor->OnMouseMove(x, y, true);
             return 0;
         case WM_LBUTTONUP:
             editor->OnMouseClick(x, y, MouseButton::Left, false, 0);
@@ -161,12 +226,53 @@ LRESULT CALLBACK MessageCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM 
     if (editor != nullptr &&
         message >= WM_KEYFIRST && message <= WM_KEYLAST)
     {
-        editor->OnKey(message, (int)wParam, (int)lParam);
-        return 0;
+        bool alt = (GetAsyncKeyState(VK_MENU) & 0x80000000) != 0;
+        if (message == WM_SYSKEYDOWN && alt && wParam == 'L')
+        {
+            editor->Load("struct Vector\n{\n    public float x;\n    public float y;\n}\n");
+        }
+        else
+        {
+            editor->OnKey(message, (int)wParam, (int)lParam);
+        }
+
+        return DefWindowProc(hwnd, message, wParam, lParam);
     }
 
     switch (message)
     {
+    case WM_SETCURSOR:
+    {
+        POINT mousePosition;
+        GetCursorPos(&mousePosition);
+
+        POINT clientAreaOffset = { 0, 0 };
+        ClientToScreen(hwnd, &clientAreaOffset);
+
+        RECT clientArea;
+        GetClientRect(hwnd, &clientArea);
+        clientArea.left += clientAreaOffset.x;
+        clientArea.top += clientAreaOffset.y;
+        clientArea.right += clientAreaOffset.x;
+        clientArea.bottom += clientAreaOffset.y;
+
+        bool isMouseInClientArea =
+            mousePosition.x >= clientArea.left &&
+            mousePosition.x <= clientArea.right &&
+            mousePosition.y >= clientArea.top &&
+            mousePosition.y <= clientArea.bottom;
+
+        if (eventHandler != nullptr && isMouseInClientArea)
+        {
+            SetCursor(eventHandler->GetCursor());
+        }
+        else
+        {
+            SetCursor(LoadCursor(NULL, IDC_ARROW));
+        }
+
+        return 0;
+    }
     case WM_SIZE:
         if (editor != nullptr)
         {
@@ -231,9 +337,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         NULL);
 
     CodeEditorRenderer renderer(window_handle);
-    CodeEditor editor(&renderer);
+    CodeEditorEventHandler eventHandler;
+    CodeEditor editor("// initial value", &renderer, &eventHandler);
 
-    CodeEditorAndRenderer editorAndRenderer = { &editor, &renderer };
+    CodeEditorInfo editorAndRenderer = { &editor, &renderer, &eventHandler };
 
     SetWindowLongPtr(window_handle, GWLP_USERDATA, (LONG_PTR)&editorAndRenderer);
 

@@ -16,10 +16,16 @@
             width: 100%;
         }
 
-        .lineDeltaDecoration {
-            background: lightblue;
-            width: 5px !important;
-            margin-left: 2px;
+        .lineDeltaDecorationUnsaved {
+            background: #EFF284;
+            width: 3px !important;
+            margin-left: 5px;
+        }
+
+        .lineDeltaDecorationSaved {
+            background: #577430;
+            width: 3px !important;
+            margin-left: 5px;
         }
     </style>
     <script src="./node_modules/monaco-editor/min/vs/loader.js"></script>
@@ -33,30 +39,66 @@
                 monaco.editor.setTheme('vs-dark');
                 editor = monaco.editor.create(
                     document.getElementById('container'), {
-                        value: '// save the world here',
-                        language: 'fsharp'
+                        value: app.getInitialValue(),
+                        language: 'csharp'
                     });
                 editor.focus();
 
                 editor.model.onDidChangeContent(function (e) {
-                    var decorations = [];
-                    for (var i in e.changes) {
-                        decorations.push({
-                            range: e.changes[i].range,
-                            options: {
-                                isWholeLine: true,
-                                linesDecorationsClassName: 'lineDeltaDecoration'
-                            }
-                        });
-                    }
+                    if (editor.model.getAlternativeVersionId() == app.lastSaveId) {
+                        var oldDecorations = [];
+                        var currentDecorations = editor.model.getAllDecorations();
+                        for (var i in currentDecorations) {
+                            oldDecorations.push(currentDecorations[i].id);
+                        }
 
-                    editor.deltaDecorations([], decorations);
+                        editor.deltaDecorations(oldDecorations, app.lastSaveDecorations);
+                    } else {
+                        var decorations = [];
+                        for (var i in e.changes) {
+                            decorations.push({
+                                range: e.changes[i].range,
+                                options: {
+                                    isWholeLine: true,
+                                    linesDecorationsClassName: 'lineDeltaDecorationUnsaved'
+                                }
+                            });
+                        }
+
+                        editor.deltaDecorations([], decorations);
+                    }
                 });
             });
         })();
 
-        var onKeyDown = function (e) {
+        function onKeyDown(e) {
             if (e.ctrlKey && e.key == 's') {
+                app.lastSaveId = editor.model.getAlternativeVersionId();
+
+                app.save(editor.getValue(monaco.editor.EndOfLinePreference.LF));
+
+                var oldDecorations = [];
+                var newDecorations = [];
+
+                var decorations = editor.model.getAllDecorations();
+                for (var i in decorations) {
+                    var decoration = decorations[i];
+                    if (decoration.options.linesDecorationsClassName == 'lineDeltaDecorationUnsaved') {
+                        oldDecorations.push(decoration.id);
+                        newDecorations.push({
+                            range: decoration.range,
+                            options: {
+                                isWholeLine: true,
+                                linesDecorationsClassName: 'lineDeltaDecorationSaved'
+                            }
+                        });
+                    }
+                }
+
+                editor.deltaDecorations(oldDecorations, newDecorations);
+
+                app.lastSaveDecorations = editor.model.getAllDecorations();
+
                 return false;
             }
 
@@ -65,9 +107,7 @@
     </script>
 </head>
 
-<body
-      onresize="editor.layout()"
-      onkeydown="return onKeyDown(event)">
+<body onresize="editor.layout()" onkeydown="return onKeyDown(event)">
     <div id="container"></div>
 </body>
 

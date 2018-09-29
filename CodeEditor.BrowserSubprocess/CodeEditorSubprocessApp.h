@@ -17,6 +17,10 @@ public:
     virtual void OnWebKitInitialized() override;
     virtual void OnBrowserCreated(CefRefPtr<CefBrowser> browser) override;
     virtual void OnBrowserDestroyed(CefRefPtr<CefBrowser> browser) override;
+    virtual bool OnProcessMessageReceived(
+        CefRefPtr<CefBrowser> browser,
+        CefProcessId source_process,
+        CefRefPtr<CefProcessMessage> message) override;
 
     // CefV8Handler
     virtual bool Execute(
@@ -28,4 +32,5 @@ public:
 
 private:
     CefRefPtr<CefBrowser> m_browser;
+    CefString m_editorInitialValue;
 };

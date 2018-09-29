@@ -1,9 +1,9 @@
 #include "CodeEditorImpl.h"
 
 #include "CodeEditorApp.h"
+#include "ICodeEditorEventHandler.h"
 #include "ICodeEditorRenderer.h"
 
-#include <iostream>
 #include <string>
 
 static CefRefPtr<CodeEditorApp> s_app;
@@ -41,8 +41,13 @@ static void InitializeCef()
     }
 }
 
-CodeEditorImpl::CodeEditorImpl(ICodeEditorRenderer* renderer)
-    : m_renderer(renderer)
+CodeEditorImpl::CodeEditorImpl(
+    const char* initialValue,
+    ICodeEditorRenderer* renderer,
+    ICodeEditorEventHandler* eventHandler)
+    : m_initialValue(initialValue)
+    , m_renderer(renderer)
+    , m_eventHandler(eventHandler)
 {
     InitializeCef();
 
@@ -55,6 +60,18 @@ CodeEditorImpl::CodeEditorImpl(ICodeEditorRenderer* renderer)
 CefRefPtr<CefBrowser> CodeEditorImpl::GetBrowser() const
 {
     return m_browser;
+}
+
+void CodeEditorImpl::Load(const char* text)
+{
+    if (m_browser != nullptr)
+    {
+        LoadInternal(text);
+    }
+    else
+    {
+        m_initialValue = text;
+    }
 }
 
 CefRefPtr<CefRenderHandler> CodeEditorImpl::GetRenderHandler()
@@ -73,12 +90,27 @@ CefRefPtr<CefLifeSpanHandler> CodeEditorImpl::GetLifeSpanHandler()
 }
 
 bool CodeEditorImpl::OnProcessMessageReceived(
-    CefRefPtr<CefBrowser> browser,
-    CefProcessId source_process,
+    CefRefPtr<CefBrowser> /*browser*/,
+    CefProcessId /*source_process*/,
     CefRefPtr<CefProcessMessage> message)
 {
-    auto args = message->GetArgumentList();
-    std::cout << "from render process: " << args->GetString(0).ToString() << std::endl;
+    if (message->GetName() == "save")
+    {
+        auto args = message->GetArgumentList();
+        auto content = args->GetString(0).ToString();
+
+        content.erase(
+            std::remove_if(
+                content.begin(),
+                content.end(),
+                [](char c) { return c == '\r'; }),
+            content.end());
+
+        if (m_eventHandler != nullptr)
+        {
+            m_eventHandler->OnSaved(content.c_str());
+        }
+    }
 
     return false;
 }
@@ -105,6 +137,7 @@ void CodeEditorImpl::OnAfterCreated(CefRefPtr<CefBrowser> browser)
     if (!m_browser)
     {
         m_browser = browser;
+        LoadInternal(m_initialValue);
     }
 }
 
@@ -142,4 +175,24 @@ void CodeEditorImpl::OnPaint(
     int height)
 {
     m_renderer->Render(buffer, width, height);
+}
+
+void CodeEditorImpl::OnCursorChange(
+    CefRefPtr<CefBrowser> /*browser*/,
+    CefCursorHandle /*cursor*/,
+    CursorType type,
+    const CefCursorInfo& /*custom_cursor_info*/)
+{
+    if (m_eventHandler != nullptr)
+    {
+        m_eventHandler->OnMouseCursorChanged((MouseCursorType)type);
+    }
+}
+
+void CodeEditorImpl::LoadInternal(const CefString& text)
+{
+    auto message = CefProcessMessage::Create("load");
+    auto args = message->GetArgumentList();
+    args->SetString(0, text);
+    m_browser->SendProcessMessage(PID_RENDERER, message);
 }

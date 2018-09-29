@@ -11,6 +11,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="CodeEditorApp.h" />
     <ClInclude Include="EnumHelper.h" />
+    <ClInclude Include="ICodeEditorEventHandler.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MimeMapping.cpp" />

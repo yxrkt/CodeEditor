@@ -1,5 +1,8 @@
 #include "CodeEditorSubprocessApp.h"
 
+#include "include\cef_browser.h"
+#include "include\cef_frame.h"
+
 CefRefPtr<CefRenderProcessHandler> CodeEditorSubprocessApp::GetRenderProcessHandler()
 {
     return this;
@@ -7,21 +10,20 @@ CefRefPtr<CefRenderProcessHandler> CodeEditorSubprocessApp::GetRenderProcessHand
 
 void CodeEditorSubprocessApp::OnWebKitInitialized()
 {
-    //std::string appCode =
-    //    "var app;"
-    //    "if (!app) {"
-    //    "    app = {};"
-    //    "    app.message = 'i am extension. i am consciousness.'"
-    //    "}"
-    //    ""
-    //    "(function () {"
-    //    "    app.doSomething = function() {"
-    //    "        native function doSomething();"
-    //    "        doSomething();"
-    //    "    }"
-    //    "})();";
+    std::string appCode = R"(
+var app = {
+    getInitialValue: function() {
+        native function getInitialValue();
+        return getInitialValue();
+    },
+    save: function(text) {
+        native function save();
+        save(text);
+    }
+};
+)";
 
-    //CefRegisterExtension("v8/app", appCode, this);
+    CefRegisterExtension("v8/app", appCode, this);
 }
 
 void CodeEditorSubprocessApp::OnBrowserCreated(CefRefPtr<CefBrowser> browser)
@@ -40,6 +42,29 @@ void CodeEditorSubprocessApp::OnBrowserDestroyed(CefRefPtr<CefBrowser> browser)
     }
 }
 
+bool CodeEditorSubprocessApp::OnProcessMessageReceived(
+    CefRefPtr<CefBrowser> browser,
+    CefProcessId /*source_process*/,
+    CefRefPtr<CefProcessMessage> message)
+{
+    if (message->GetName() == "load")
+    {
+        auto args = message->GetArgumentList();
+
+        m_editorInitialValue = args->GetString(0);
+
+        std::string js = R"(
+if (typeof editor !== 'undefined') {
+    editor.model.setValue(app.getInitialValue());
+}
+)";
+
+        browser->GetMainFrame()->ExecuteJavaScript(js, {}, 0);
+    }
+
+    return false;
+}
+
 bool CodeEditorSubprocessApp::Execute(
     const CefString& name,
     CefRefPtr<CefV8Value> object,
@@ -47,16 +72,26 @@ bool CodeEditorSubprocessApp::Execute(
     CefRefPtr<CefV8Value>& retval,
     CefString& exception)
 {
-    if (name == "doSomething" && arguments.empty())
+    if (name == "save")
     {
-        //auto frame = CefV8Context::GetCurrentContext()->GetBrowser()->GetMainFrame();
-        //frame->ExecuteJavaScript()
-        //MessageBox(nullptr, "hello, javascript? yes, this is c++", "subprocess", MB_ICONINFORMATION);
-        auto message = CefProcessMessage::Create("notify");
-        auto args = message->GetArgumentList();
-        args->SetString(0, "THAT'S your browser. INTERNET EXPLORER's your browser!");
-        m_browser->SendProcessMessage(PID_BROWSER, message);
-        return true;
+        if (arguments.size() == 1)
+        {
+            auto message = CefProcessMessage::Create("save");
+            auto args = message->GetArgumentList();
+            args->SetString(0, arguments.front()->GetStringValue());
+
+            m_browser->SendProcessMessage(PID_BROWSER, message);
+
+            return true;
+        }
+    }
+    else if (name == "getInitialValue")
+    {
+        if (arguments.empty())
+        {
+            retval = CefV8Value::CreateString(m_editorInitialValue);
+            return true;
+        }
     }
 
     return false;

@@ -1,5 +1,6 @@
 #pragma once
 
+class ICodeEditorEventHandler;
 class ICodeEditorRenderer;
 
 enum class MouseButton
@@ -27,8 +28,13 @@ enum class Modifiers
 class CodeEditor
 {
 public:
-    CodeEditor(ICodeEditorRenderer* renderer);
+    CodeEditor(
+        const char* initialValue,
+        ICodeEditorRenderer* renderer,
+        ICodeEditorEventHandler* eventHandler);
     ~CodeEditor();
+
+    void Load(const char* text);
 
     void OnWindowResized();
     void OnMouseMove(int x, int y, bool mouseLeave);

@@ -106,6 +106,7 @@
     <ClInclude Include="CodeEditor.h" />
     <ClInclude Include="CodeEditorApp.h" />
     <ClInclude Include="EnumHelper.h" />
+    <ClInclude Include="ICodeEditorEventHandler.h" />
     <ClInclude Include="ICodeEditorRenderer.h" />
     <ClInclude Include="MimeMapping.h" />
     <ClInclude Include="CodeEditorImpl.h" />

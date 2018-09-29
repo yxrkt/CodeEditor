@@ -2,25 +2,28 @@
 
 #include "include\cef_client.h"
 #include "include\cef_render_handler.h"
-//#include "include\cef_mouse"
 
 class CefZipArchive;
 class CefStreamReader;
+class ICodeEditorEventHandler;
 class ICodeEditorRenderer;
 
 class CodeEditorImpl
     : public CefClient
     , public CefKeyboardHandler
     , public CefLifeSpanHandler
-    //, public CefMou
     , public CefRenderHandler
 {
     IMPLEMENT_REFCOUNTING(CodeEditorImpl);
 
 public:
-    CodeEditorImpl(ICodeEditorRenderer* renderer);
+    CodeEditorImpl(
+        const char* initialValue,
+        ICodeEditorRenderer* renderer,
+        ICodeEditorEventHandler* eventHandler);
 
     CefRefPtr<CefBrowser> GetBrowser() const;
+    void Load(const char* text);
 
     // CefClient
     virtual CefRefPtr<CefRenderHandler> GetRenderHandler() override;
@@ -56,8 +59,18 @@ public:
         const void* buffer,
         int width,
         int height) override;
+    virtual void OnCursorChange(
+        CefRefPtr<CefBrowser> browser,
+        CefCursorHandle cursor,
+        CursorType type,
+        const CefCursorInfo& custom_cursor_info) override;
 
 private:
+    void LoadInternal(const CefString& text);
+
+private:
+    CefString m_initialValue;
     ICodeEditorRenderer* m_renderer;
+    ICodeEditorEventHandler* m_eventHandler;
     CefRefPtr<CefBrowser> m_browser;
 };

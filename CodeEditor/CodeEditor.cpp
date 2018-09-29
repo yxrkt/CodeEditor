@@ -6,14 +6,22 @@
 template <> struct is_flags_enum<cef_event_flags_t> { static const bool value = true; };
 template <> struct is_flags_enum<Modifiers> { static const bool value = true; };
 
-CodeEditor::CodeEditor(ICodeEditorRenderer* renderer)
-    : m_impl(new CodeEditorImpl(renderer))
+CodeEditor::CodeEditor(
+    const char* initialValue,
+    ICodeEditorRenderer* renderer,
+    ICodeEditorEventHandler* eventHandler)
+    : m_impl(new CodeEditorImpl(initialValue, renderer, eventHandler))
 {
 }
 
 CodeEditor::~CodeEditor()
 {
     delete m_impl;
+}
+
+void CodeEditor::Load(const char* text)
+{
+    m_impl->Load(text);
 }
 
 void CodeEditor::OnWindowResized()
